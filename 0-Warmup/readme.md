@@ -38,10 +38,10 @@ Please provide answers to these questions using markdown notation and place them
 
 https://github.com/vy56D/CS283
 
-5. Briefly describe what you want to get out of this class.
+4. Briefly describe what you want to get out of this class.
 
 I want to learn more about computer systems as I have little to no knowledge on the topic. I also want to learn more about Linux and virtual machines. I have heard that virtual machines are very useful and can protect the computer but I do not have much experience or knowledge regarding it.
 
-6. Briefly describe any concerns you might be having with being successful in this class (if any).
+5. Briefly describe any concerns you might be having with being successful in this class (if any).
 
 I am concerned about the workload and if I would be left behind unable to understand the material.
