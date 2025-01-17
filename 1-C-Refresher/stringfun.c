@@ -14,7 +14,7 @@ int  setup_buff(char *, char *, int);
 int  count_words(char *, int, int);
 //add additional prototypes here
 
-
+//Adds characters into buff while removing leading, trailing and extra whitespaces
 int setup_buff(char *buff, char *user_str, int len){
     //TODO: #4:  Implement the setup buff as per the directions
     if (user_str == NULL){
@@ -22,31 +22,35 @@ int setup_buff(char *buff, char *user_str, int len){
     }
     int i = 0; //for interating through the user_str
     int j = 0; //for interating through buff
-    int spaceCount = 0; //variable for checking if there has been more than one space
+    int spaceCount = 1; //Variable for checking if there has been more than one whitespace. Set to 1 to prevent leading whitespace
     while (*(user_str + i) != '\0'){  //Checks if it is the end
         if (j >= len){     // checks if the buffer still has enough space
             return -1;
         }
-        if (*(user_str + i) == ' '){
-            if (spaceCount!=1){ //only adds to buff if it isn't additional spaces
+        if (*(user_str + i) == ' ' || *(user_str + i) == '\t' || *(user_str + i) == '\n'){
+            if (spaceCount!=1){ //only adds to buff if it isn't additional whitespace
                 spaceCount=1;
                 *(buff + j) = *(user_str + i);
                 j++;
             }
         }
         else{
-            spaceCount = 0; // reset so it can add spaces to buff again
+            spaceCount = 0; // reset so it can add whitespace to buff again
             *(buff + j) = *(user_str + i);
             j++;
         }
         i++;
+    }
+    //removing whitespace from the end
+    if (*(buff +j-1) == ' ' || *(buff +j-1) == '\t' || *(buff +j-1) == '\n'){
+        *(buff +j-1) = '.';
     }
     while (j<len){ //adding . for the rest of buff
         *(buff + j) = '.';
         j++;
     }
 
-    return 0; //for now just so the code compiles. 
+    return i; //for now just so the code compiles. 
 }
 
 void print_buff(char *buff, int len){
@@ -63,13 +67,78 @@ void usage(char *exename){
 
 }
 
+//counts number of words in buff
 int count_words(char *buff, int len, int str_len){
     //YOU MUST IMPLEMENT
-    
-    return 0;
+    if (str_len < 1 || buff == NULL){ //checks for invalid str_len and buff inputs
+        return -2; //invalid input
+    }
+    int i = 0;// to interate through buff
+    int count = 0; //to the count of spaces
+    while (i < len){
+        if (*(buff + i) == ' '){ //adds 1 to count if there is a space
+            count += 1; 
+        }
+        i++;
+    }
+    count+=1; //There is one more word than the number of spaces
+    return count;
 }
 
 //ADD OTHER HELPER FUNCTIONS HERE FOR OTHER REQUIRED PROGRAM OPTIONS
+
+//reverses buff then prints
+int reverse_character(char *buff, int len, int str_len){
+    if (str_len < 1 || buff == NULL || len < str_len){ //checks for invalid inputs
+        return -2; //invalid input
+    }
+    int i = 0; //element from the start
+    int j = str_len-1; //element from the end
+    while (i<j){
+        char temp = *(buff + i); //temperary varible to swap
+        *(buff + i) = *(buff + j);
+        *(buff + j) = temp;
+        i++;
+        j--;
+    }
+    
+    return 0; //no errors
+}
+
+//prints the word and number of characters in the word on separate lines
+int word_print(char *buff, int len, int str_len){
+    if (str_len < 1 || buff == NULL || len < str_len){ //checks for invalid inputs
+        return -2; //invalid input
+    }
+    int i = 0; //to iterate through buff
+    int count = 0; //to count number of characters
+    int word = 1; //to count number of words
+    int line_check = 1; //to check when to number the words
+    printf("Word Print\n----------\n1. "); //printing the beginning part of word print
+    while (i < str_len){
+        if (*(buff + i) == ' ' ||  *(buff + i) == '\n' || *(buff + i) == '\t'){
+            word++;
+            printf("(%d)",count);
+            line_check = 0; //resets so the words can be numbered
+            count = 0; //resetting character count for each word
+        }
+        else{
+            if (line_check != 1){
+                printf("\n%d. ",word); //numbers the word
+                line_check = 1;
+            }
+            count++;
+            printf("%c",*(buff + i));
+             if (i == str_len-1){
+                printf("(%d)",count);
+            }
+            
+        }
+        i++;
+    }
+    printf("\n\nNumber of words returned: %d\n",word); //printing number of words returned
+    return 0; //no errors
+}
 
 int main(int argc, char *argv[]){
 
@@ -114,7 +183,6 @@ int main(int argc, char *argv[]){
     buff = malloc(BUFFER_SZ * sizeof(char));
     if (buff == NULL)
     {
-        printf("Malloc Failure");
         exit(99);
     }
 
@@ -134,6 +202,34 @@ int main(int argc, char *argv[]){
                 exit(2);
             }
             printf("Word Count: %d\n", rc);
+            break;
+        
+        case 'r':
+            rc = reverse_character(buff, BUFFER_SZ, user_str_len);  
+            if (rc < 0){
+                printf("Error reversing buff, rc = %d", rc);
+                exit(2);
+            }
+            break;
+        
+        case 'w':
+            rc = word_print(buff, BUFFER_SZ, user_str_len);
+            if (rc < 0){
+                printf("Error printing words, rc = %d", rc);
+                exit(2);
+            }
+            break;
+
+        case 'x':
+            if (argc != 5)
+            {
+                usage(argv[0]);
+                exit(1);
+            }
+            else{
+                printf("Not Implemented!");
+                exit(3);
+            }
             break;
 
         //TODO:  #5 Implement the other cases for 'r' and 'w' by extending
