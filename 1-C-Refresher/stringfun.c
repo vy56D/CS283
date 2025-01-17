@@ -251,4 +251,6 @@ int main(int argc, char *argv[]){
 //          is a good practice, after all we know from main() that 
 //          the buff variable will have exactly 50 bytes?
 //  
-//          PLACE YOUR ANSWER HERE
+//          By providing both the pointer and the length the coding and debugging process will be easier. 
+//          Having the length will make it easier to stay within bounds. It will reduce the amount of errors when coding. 
+//          When coding the functions the length and pointer were both used to maintain a level of readability and organization.
