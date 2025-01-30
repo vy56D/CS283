@@ -63,7 +63,19 @@ int open_db(char *dbFile, bool should_truncate)
 int get_student(int fd, int id, student_t *s)
 {
     // TODO
-    return NOT_IMPLEMENTED_YET;
+    student_t student;//structure to store the read data
+    int reading; //for read output
+
+    while ((reading = read(fd, &student,STUDENT_RECORD_SIZE))>0){ //continue reading if no errors and not at the end
+        if ((reading != STUDENT_RECORD_SIZE) || (reading == -1)){ //checks for errors
+            return ERR_DB_FILE;
+        }
+        if (student.id == id){//checks if id is found
+            *s=student;//copies data
+            return NO_ERROR;
+        }
+    }
+    return SRCH_NOT_FOUND;//only returns if id is not found and if there were no erors
 }
 
 /*
@@ -94,8 +106,43 @@ int get_student(int fd, int id, student_t *s)
 int add_student(int fd, int id, char *fname, char *lname, int gpa)
 {
     // TODO
-    printf(M_NOT_IMPL);
-    return NOT_IMPLEMENTED_YET;
+    student_t student = {0};//empty record
+    int byteNum = STUDENT_RECORD_SIZE *id; //offset
+
+    if(lseek(fd, byteNum,SEEK_SET)==-1){//to move file pointer and check for errors
+        printf(M_ERR_DB_READ);
+        return ERR_DB_FILE;
+    }
+    
+    int reading = read(fd, &student,STUDENT_RECORD_SIZE); //reading and getting read output
+    if (reading == -1){//check for error
+        printf(M_ERR_DB_READ);
+        return ERR_DB_FILE;
+    }
+
+    if(memcmp(&student, &EMPTY_STUDENT_RECORD, STUDENT_RECORD_SIZE) != 0){//check for duplicates by seeing if the record location is empty
+        printf(M_ERR_DB_ADD_DUP, id);
+        return ERR_DB_OP;
+    }
+    else{
+        student.id = id; //adding the data
+        strcpy(student.fname, fname);
+        strcpy(student.lname,lname);
+        student.gpa = gpa;
+
+        if(lseek(fd, byteNum,SEEK_SET)==-1){//moving file pointer and checking for errors
+        printf(M_ERR_DB_READ);
+        return ERR_DB_FILE;
+        }
+
+        int writing = write(fd, &student, STUDENT_RECORD_SIZE);//getting write output and writing
+        if (writing != STUDENT_RECORD_SIZE){
+            printf(M_ERR_DB_WRITE);
+            return ERR_DB_FILE;
+        }
+    }
+    printf(M_STD_ADDED, id);
+    return NO_ERROR; //passed all error checks
 }
 
 /*
@@ -123,8 +170,34 @@ int add_student(int fd, int id, char *fname, char *lname, int gpa)
 int del_student(int fd, int id)
 {
     // TODO
-    printf(M_NOT_IMPL);
-    return NOT_IMPLEMENTED_YET;
+    student_t student;
+    int byteNum;
+    int existStudent;
+
+    existStudent = get_student(fd, id, &student); //getting student
+
+    if (existStudent == ERR_DB_FILE){ //if there was error getting student
+        return ERR_DB_FILE;
+    }
+
+    if (existStudent == SRCH_NOT_FOUND){ //student does not exist
+        printf(M_STD_NOT_FND_MSG, id);
+        return ERR_DB_OP;
+    }
+
+    byteNum = id*STUDENT_RECORD_SIZE; //offset
+    if (lseek(fd,byteNum,SEEK_SET)==-1){ //moving file pointer and error check
+        printf(M_ERR_DB_READ);
+        return ERR_DB_FILE;
+    }
+
+    if(write(fd,&EMPTY_STUDENT_RECORD, STUDENT_RECORD_SIZE)==-1){ //writing and error check
+        printf(M_ERR_DB_WRITE);
+        return ERR_DB_FILE;
+    }
+
+    printf(M_STD_DEL_MSG, id);
+    return NO_ERROR; //passes all error checks
 }
 
 /*
@@ -154,8 +227,33 @@ int del_student(int fd, int id)
 int count_db_records(int fd)
 {
     // TODO
-    printf(M_NOT_IMPL);
-    return NOT_IMPLEMENTED_YET;
+    student_t student;
+    int count =0; //count of records
+    int reading;
+    while(1){
+        reading = read(fd, &student, STUDENT_RECORD_SIZE);
+
+        if (reading == 0) //checks for end of file
+        {
+            break;
+        }
+
+        if (reading == -1){ //checks for error
+            printf(M_ERR_DB_READ);
+            return ERR_DB_FILE;
+        }
+
+        if(memcmp(&student, &EMPTY_STUDENT_RECORD, STUDENT_RECORD_SIZE) != 0){ //checks if record is not empty
+            count +=1;
+        }
+    }
+    if (count == 0){ //if count is 0 then database is empty
+        printf(M_DB_EMPTY);
+    }
+    else{
+        printf(M_DB_RECORD_CNT, count); //printing count
+    };
+    return count; 
 }
 
 /*
@@ -194,8 +292,40 @@ int count_db_records(int fd)
 int print_db(int fd)
 {
     // TODO
-    printf(M_NOT_IMPL);
-    return NOT_IMPLEMENTED_YET;
+    student_t student;
+    int reading; 
+    int first = 0; //to check if header has been printed
+    float calculated_gpa_from_student;
+
+    while (1){ //loop
+        reading = read(fd, &student, STUDENT_RECORD_SIZE); // getting read output and reading
+
+        if (reading == 0){
+            break; //if end of file then break and stop loop
+        }
+
+        if (reading == -1){ //checks for error
+            printf(M_ERR_DB_READ);
+            return ERR_DB_FILE;
+        }
+
+        if(memcmp(&student,&EMPTY_STUDENT_RECORD,STUDENT_RECORD_SIZE)==0){ //checks if record is empty
+            continue; //skips empty records
+        }
+
+        if (first ==0){ //checking for first real row
+            first =1; //to stop header from bring reprinted
+            printf(STUDENT_PRINT_HDR_STRING, "ID","FIRST NAME", "LAST_NAME", "GPA"); //print header
+        }
+
+        calculated_gpa_from_student = student.gpa/100.0; //get gpa as a float
+        printf(STUDENT_PRINT_FMT_STRING, student.id, student.fname,student.lname, calculated_gpa_from_student); //print
+        }
+        
+    if (first == 0){ //if there is no real rows then the database is empty
+        printf(M_DB_EMPTY);
+    }
+    return NO_ERROR; // passes all error checks
 }
 
 /*
@@ -229,7 +359,15 @@ int print_db(int fd)
 void print_student(student_t *s)
 {
     // TODO
-    printf(M_NOT_IMPL);
+    float calculated_gpa_from_s;
+    if (s==NULL || s->id==0){ //checks for a invalid student struct input
+        printf(M_ERR_STD_PRINT);
+    }
+    else{
+        calculated_gpa_from_s = s->gpa/100.0;
+        printf(STUDENT_PRINT_HDR_STRING, "ID","FIRST NAME", "LAST_NAME", "GPA"); //printing header
+        printf(STUDENT_PRINT_FMT_STRING, s->id, s->fname,s->lname, calculated_gpa_from_s); //printing data
+    }
 }
 
 /*
