@@ -53,11 +53,6 @@ int main()
     cmd_buff = malloc (SH_CMD_MAX*sizeof(char));
     
     while(1){
-        if(strcmp(cmd_buff,EXIT_CMD)==0){
-            
-            break;
-        }
-
         printf("%s", SH_PROMPT);
         if (fgets(cmd_buff, ARG_MAX, stdin) == NULL){
             printf("\n");
@@ -65,6 +60,10 @@ int main()
         }
         //remove the trailing \n from cmd_buff
         cmd_buff[strcspn(cmd_buff,"\n")] = '\0';
+
+        if(strcmp(cmd_buff,EXIT_CMD)==0){ 
+            exit(OK);
+        }
 
         if (strlen(cmd_buff)==0){
             printf(CMD_WARN_NO_CMD);
@@ -90,5 +89,5 @@ int main()
         }
     }
     free(cmd_buff);
-    return 0;
+    return OK;
 }

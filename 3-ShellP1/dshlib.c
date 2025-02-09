@@ -35,14 +35,12 @@
 int build_cmd_list(char *cmd_line, command_list_t *clist)
 {
     char *parse;
-    char *command;
-    int count = 0;
     clist->num = 0;
 
     parse = strtok(cmd_line, PIPE_STRING);
 
     while (parse != NULL) {
-        if (count >= CMD_MAX) {
+        if (clist->num >= CMD_MAX) {
             return ERR_TOO_MANY_COMMANDS; 
         }
 
@@ -61,32 +59,29 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
             continue;
         }
 
-        command_t *com = &clist->commands[count];
+        command_t *com = &clist->commands[clist->num];
         memset(com, 0, sizeof(command_t));
         memset(com->args, 0, ARG_MAX);
         memset(com->exe, 0, EXE_MAX);
 
-        command = parse;
-        char *space = strchr(command, SPACE_CHAR);
-        if (space != NULL){
-            *space = '\0';
-            space++;
+        char *firstSpace = strchr(parse, SPACE_CHAR);
+        if (firstSpace != NULL){
+            *firstSpace = '\0';
+            firstSpace+=1;
         }
-        if (strlen(command) > EXE_MAX) {
+        if (strlen(parse) > EXE_MAX) {
             return ERR_CMD_OR_ARGS_TOO_BIG;
         }
-        strcpy(com->exe, command);
+        strcpy(com->exe, parse);
 
-         if (space != NULL && *space != '\0') {
-            char *arg = com->args;
-            if (strlen(space) > ARG_MAX) {
+         if (firstSpace != NULL && *firstSpace != '\0') {
+            if (strlen(firstSpace) > ARG_MAX) {
                 return ERR_CMD_OR_ARGS_TOO_BIG;
             }
-            strcpy(arg, space);
+            strcpy(com->args, firstSpace);
         }
 
         clist->num += 1;
-        count += 1;
 
         parse = strtok(NULL, PIPE_STRING); 
     }
