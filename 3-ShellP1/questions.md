@@ -15,10 +15,7 @@
 
 - One topic you should have found information on is "redirection". Please provide at least 3 redirection examples that we should implement in our custom shell, and explain what challenges we might have implementing them.
 
-    > **Answer**:  ls > file.txt, sort < sort.txt, ls | sort
-    The challenge implementing ls > file.txt is that it would have to open and write to the file. Issues with what would happen if the file already exists would also arise.
-    The challenge implementing sort < sort.txt is that the file has to exist. Issues would arise if there is no handling for when the file does not exist. Issues also arise when the file is unreadable.
-    The challenge implementing ls | sort is that the data passed through the pipe may not be valid. There would need to be checks to ensure that there are no errors between commands.
+    > **Answer**:  3 redirection examples are ls > file.txt, sort < sort.txt, ls | sort. The challenge implementing ls > file.txt is that it would have to open and write to the file. Issues with what would happen if the file already exists would also arise. The challenge implementing sort < sort.txt is that the file has to exist. Issues would arise if there is no handling for when the file does not exist. Issues also arise when the file is unreadable. The challenge implementing ls | sort is that the data passed through the pipe may not be valid. There would need to be checks to ensure that there are no errors between commands.
 
 - You should have also learned about "pipes". Redirection and piping both involve controlling input and output in the shell, but they serve different purposes. Explain the key differences between redirection and piping.
 
