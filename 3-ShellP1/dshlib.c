@@ -37,53 +37,53 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
     char *parse;
     clist->num = 0;
 
-    parse = strtok(cmd_line, PIPE_STRING);
+    parse = strtok(cmd_line, PIPE_STRING);//parse commandline by pipe
 
-    while (parse != NULL) {
-        if (clist->num >= CMD_MAX) {
+    while (parse != NULL) {//loop to go through all parses
+        if (clist->num >= CMD_MAX) {//if count of commands is too high then there is too many commands
             return ERR_TOO_MANY_COMMANDS; 
         }
 
-        while (isspace((unsigned char)*parse)) {
+        while (isspace((unsigned char)*parse)) {//remove leading whitespace
             parse++;
         }
 
         char *end = parse + strlen(parse) - 1;
-        while (end > parse && isspace((unsigned char)*end)) {
+        while (end > parse && isspace((unsigned char)*end)) {//remove trailing whitespace
             end--;
         }
         *(end + 1) = '\0';
 
-        if (strlen(parse) == 0) {
+        if (strlen(parse) == 0) {//if nothing is left after removing whitespace, continue looping
             parse = strtok(NULL, PIPE_STRING);
             continue;
         }
 
-        command_t *com = &clist->commands[clist->num];
-        memset(com, 0, sizeof(command_t));
+        command_t *com = &clist->commands[clist->num];//com short for command, for each individual command
+        memset(com, 0, sizeof(command_t));//reset
         memset(com->args, 0, ARG_MAX);
         memset(com->exe, 0, EXE_MAX);
 
-        char *firstSpace = strchr(parse, SPACE_CHAR);
+        char *firstSpace = strchr(parse, SPACE_CHAR);//finding first space character
         if (firstSpace != NULL){
             *firstSpace = '\0';
             firstSpace+=1;
         }
-        if (strlen(parse) > EXE_MAX) {
+        if (strlen(parse) > EXE_MAX) {//making sure the executable is not too large
             return ERR_CMD_OR_ARGS_TOO_BIG;
         }
-        strcpy(com->exe, parse);
+        strcpy(com->exe, parse);//copy executable
 
          if (firstSpace != NULL && *firstSpace != '\0') {
-            if (strlen(firstSpace) > ARG_MAX) {
+            if (strlen(firstSpace) > ARG_MAX) {//making sure the arguments is not too large
                 return ERR_CMD_OR_ARGS_TOO_BIG;
             }
-            strcpy(com->args, firstSpace);
+            strcpy(com->args, firstSpace); //copy arguments
         }
 
-        clist->num += 1;
+        clist->num += 1;//increment counter for the number of commands
 
-        parse = strtok(NULL, PIPE_STRING); 
+        parse = strtok(NULL, PIPE_STRING); //continue the parsing
     }
-    return OK;
+    return OK;//no errors
 }

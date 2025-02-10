@@ -50,7 +50,7 @@ int main()
     char *cmd_buff;
     int rc = 0;
     command_list_t clist;
-    cmd_buff = malloc (SH_CMD_MAX*sizeof(char));
+    cmd_buff = malloc (SH_CMD_MAX*sizeof(char));//allocate memory for command buffer
     
     while(1){
         printf("%s", SH_PROMPT);
@@ -61,26 +61,26 @@ int main()
         //remove the trailing \n from cmd_buff
         cmd_buff[strcspn(cmd_buff,"\n")] = '\0';
 
-        if(strcmp(cmd_buff,EXIT_CMD)==0){ 
+        if(strcmp(cmd_buff,EXIT_CMD)==0){ //check if input is exit
             exit(OK);
         }
 
-        if (strlen(cmd_buff)==0){
+        if (strlen(cmd_buff)==0){//check if there is a command
             printf(CMD_WARN_NO_CMD);
             continue;
         }
 
-        rc = build_cmd_list(cmd_buff, &clist);
+        rc = build_cmd_list(cmd_buff, &clist);//build the command list
 
-        if (rc == ERR_TOO_MANY_COMMANDS){
+        if (rc == ERR_TOO_MANY_COMMANDS){//checking for errors
             printf(CMD_ERR_PIPE_LIMIT,CMD_MAX);
             continue;
         }
 
-        if (rc == OK){
+        if (rc == OK){//if there are no errors then print
             printf(CMD_OK_HEADER,clist.num);
             for (int i = 0; i<clist.num; i++){
-                printf("<%d> %s", i+1,clist.commands[i].exe);
+                printf("<%d> %s", i+1,clist.commands[i].exe);//i+1 for counter
                 if((int)strlen(clist.commands[i].args)>0){
                     printf(" [%s]",clist.commands[i].args);
                 }
@@ -88,6 +88,6 @@ int main()
             }
         }
     }
-    free(cmd_buff);
-    return OK;
+    free(cmd_buff);//free command buffer
+    return OK;//no errors
 }
