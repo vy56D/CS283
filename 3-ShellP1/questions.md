@@ -9,7 +9,7 @@
 
 3. In `dshlib.c`, the function `build_cmd_list(`)` must trim leading and trailing spaces from each command before storing it. Why is this necessary? If we didn't trim spaces, what kind of issues might arise when executing commands in our shell?
 
-    > **Answer**:  It is necessary because it may interrupt command parsing. An issue that may arise when executing commands is that the command is not found. The space will throw off the search. If strcmp() is used for determining the command then the space will make it so that the command does not match.
+    > **Answer**:  It is necessary because it may interrupt command parsing. An issue that may arise when executing commands is that the command is not found. The space will throw off the search. If strcmp() is used for determining the command then the space will make it so that the command does not match. Removing the leading and trailing spaces also ensures that strchr() will work without issues.
 
 4. For this question you need to do some research on STDIN, STDOUT, and STDERR in Linux. We've learned this week that shells are "robust brokers of input and output". Google _"linux shell stdin stdout stderr explained"_ to get started.
 
@@ -27,4 +27,4 @@
 
 - How should our custom shell handle errors from commands that fail? Consider cases where a command outputs both STDOUT and STDERR. Should we provide a way to merge them, and if so, how?
 
-    > **Answer**: Our custom shell should print an error message and have a nonzero exit code. Nonzero exit indicates that an error has occurred. We should provide a way to merge them because this allows the regular output to be with the error output in one place. Merging can be done by redirecting STDERR and STDOUT to one destination.
+    > **Answer**: Our custom shell should print an error message and have a nonzero exit code. Nonzero exit indicates that an error has occurred. We should provide a way to merge them because this allows the regular output to be with the error output in one place. Merging can be done by redirecting STDERR and STDOUT to the same destination.
