@@ -75,7 +75,7 @@
             }
             else{
                 if (chdir(clist->commands[i].argv[1]) != 0) {//checking for successful directory change
-                    printf("Invalid directory \n");
+                    printf("Error: Invalid directory \n");
                     continue;
                 }
             }
@@ -123,47 +123,74 @@
     return OK;
 }
 
-int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff) {
-    int argc = 0;
-    char *arg_start = cmd_line;//pointer to the start
-
-    for (int i = 0; i < CMD_ARGV_MAX; i++) {
-        cmd_buff->argv[i] = NULL;
-    }
-
-    while (*arg_start != '\0') {//removing leading whitespace
-        while (*arg_start == SPACE_CHAR) {
-            arg_start++;
-        }
-
-        if (*arg_start == '\0') {
-            break;//reached end so end loop
-        }
-
-        char *arg_end = strchr(arg_start, SPACE_CHAR);//find next space
-
-        if (arg_end == NULL) {//check if finished and reached end
-            cmd_buff->argv[argc] = arg_start;
-            argc++;
-            break;
-        } else {
-            *arg_end='\0';//null terminate 
-            cmd_buff->argv[argc]=arg_start;
-            argc+=1;
-            arg_start = arg_end + 1;//move to next start
-        }
-
-        if (argc >= CMD_ARGV_MAX) {//check number of args
-            return ERR_TOO_MANY_COMMANDS;
-        }
-    }
-
-    cmd_buff->argc = argc;
+int build_cmd_buff(char *cmd_buff, cmd_buff_t *cmd) {//edited 4-Shell
+        cmd->_cmd_buffer = cmd_buff;//store command
+        cmd->argc = 0;
     
-    if (argc == 0) {//no args
-        return ERR_CMD_ARGS_BAD;
-    }
-
+        int count = 0;
+        while (cmd_buff[count] == SPACE_CHAR) {//counting number of spaces to shift
+            count++;
+        }
+        int i = 0;
+        while (cmd_buff[i + count] != '\0') {//shifting/removing leading whitespace
+            cmd_buff[i] = cmd_buff[i + count];
+            i++;
+        }
+        cmd_buff[i] = '\0';
+        int len = strlen(cmd_buff);
+        while (len >= 1 && cmd_buff[len - 1] == SPACE_CHAR) {//remove trailing whitespace
+            cmd_buff[len - 1] = '\0';
+            len--;
+        }
+    
+        if (strlen(cmd_buff) == 0) {//check for no input
+            printf(CMD_WARN_NO_CMD);
+            return WARN_NO_CMDS;
+        }
+    
+        char *begin = cmd_buff;
+        i = 0;//reset i
+        int quotes = 0; //acts as a boolean
+    
+        while (cmd_buff[i] != '\0') {
+            if (cmd_buff[i] == '"') {
+                quotes = !quotes;//flip
+                if (!quotes) {
+                    cmd_buff[i] = '\0';//null terminate and save into struct
+                    cmd->argv[cmd->argc] = begin;
+                    cmd->argc++;
+                    begin = &cmd_buff[i + 1];
+                } else {
+                    // Start of quoted argument
+                    begin = &cmd_buff[i + 1];//mark new beginning
+                }
+                i++;
+            } else if (cmd_buff[i] == SPACE_CHAR && !quotes) {//not in quotes but has a space
+                cmd_buff[i] = '\0';
+                if (begin != &cmd_buff[i]) {
+                    cmd->argv[cmd->argc] = begin;//save arg
+                    cmd->argc++;
+                }
+                begin = &cmd_buff[i + 1];//set new beginning
+                i++;
+            } else {//increment
+                i++;
+            }
+    
+            if (cmd->argc >= CMD_ARGV_MAX) {//checking to see if there are too many args
+                return ERR_CMD_OR_ARGS_TOO_BIG;
+            }
+        }
+    
+        if (begin != &cmd_buff[i] && cmd->argc < CMD_ARGV_MAX) {//getting last arg
+            cmd->argv[cmd->argc] = begin;
+            cmd->argc++;
+        }
+    
+        if (quotes) {//checking for missing end quotes
+            printf("Error: Missing end quotes \n");
+            return ERR_EXEC_CMD;
+        }
     return OK;//no errors
 }
 
@@ -173,14 +200,16 @@ int build_cmd_list(char *cmd_line, command_list_t *clist) {
 
     com = strtok(cmd_line, PIPE_STRING);//split by pipe
 
-    while (com != NULL && clist->num < CMD_MAX) {
+    while (com != NULL) {
+        if (clist->num > CMD_MAX) {
+            printf(CMD_ERR_PIPE_LIMIT,CMD_MAX);
+            return ERR_TOO_MANY_COMMANDS;//too many commands
+        }
+
         cmd_buff_t *cmd = &clist->commands[clist->num];
 
         int rc = build_cmd_buff(com, cmd);//build each buffer
         if (rc != OK) {
-            if (rc == ERR_TOO_MANY_COMMANDS){
-                return ERR_TOO_MANY_COMMANDS;
-            }
             return rc;
         }
 
@@ -203,7 +232,7 @@ int exec_cmd(cmd_buff_t *cmd) {
         }
         else{
             if (chdir(cmd->argv[1])!=0) {//checking for successful directory change
-                printf("Invalid directory \n");
+                printf("Error: Invalid directory \n");
                 return ERR_EXEC_CMD;
             }
         }
@@ -236,7 +265,7 @@ int exec_local_cmd_loop()
     char *cmd_buff;
     cmd_buff = malloc(ARG_MAX);
 
-    while (1) {
+    while(1) {
         printf("%s", SH_PROMPT);
         if (fgets(cmd_buff, ARG_MAX, stdin) == NULL) {
             printf("\n");
@@ -246,28 +275,24 @@ int exec_local_cmd_loop()
         // Remove the trailing \n from cmd_buff
         cmd_buff[strcspn(cmd_buff, "\n")] = '\0';
 
-        // Build the command list
         command_list_t clist;
         memset(&clist, 0, sizeof(command_list_t));
 
-        if (build_cmd_list(cmd_buff, &clist) != OK) {
-            printf(CMD_WARN_NO_CMD);
+        if (build_cmd_list(cmd_buff, &clist) != OK) {//build command list
             continue;
         }
 
-        if (clist.num > 1) {
-            //printf("0");
+        if (clist.num > 1) {//has many commands
+            //printf("0");//debug
             if (execute_pipeline(&clist) != OK) {
-                //printf("1");
+                //printf("1");//debug
             }
         } else {
-            // Handle single command (no pipes)
-            if (exec_cmd(&clist.commands[0]) != OK) {
-                //printf("2");
+            if (exec_cmd(&clist.commands[0]) != OK) {//one command
+                //printf("2");//debug
             }
         }
     }
-
     free(cmd_buff);//free
     return OK;//no error
 }
