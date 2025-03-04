@@ -4,7 +4,7 @@ My implementation ensures that all child processes complete before the shell con
 
 2. The dup2() function is used to redirect input and output file descriptors. Explain why it is necessary to close unused pipe ends after calling dup2(). What could go wrong if you leave pipes open?
 
-It is necessary to close unused pipe ends after calling dup2() because if they are not closed then there may be file descriptor leaks. If they are left open then there can be a lack a termination of a process and waste of resources. The processes will also begin to not run smoothly, without errors.
+It is necessary to close unused pipe ends after calling dup2() because if they are not closed then there may be file descriptor leaks. If they are left open then there can be a lack of termination of a process and waste of resources. The processes will also begin to not run smoothly, without errors.
 
 3. Your shell recognizes built-in commands (cd, exit, dragon). Unlike external commands, built-in commands do not require execvp(). Why is cd implemented as a built-in rather than an external command? What challenges would arise if cd were implemented as an external process?
 
