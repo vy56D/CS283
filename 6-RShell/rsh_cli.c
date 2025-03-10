@@ -99,6 +99,15 @@ int exec_remote_cmd_loop(char *address, int port)
     int is_eof;
 
     // TODO set up cmd and response buffs
+    cmd_buff = malloc(SH_CMD_MAX);
+    if (cmd_buff ==  NULL){
+        return client_cleanup(cli_socket, cmd_buff, rsp_buff, ERR_MEMORY);
+    }
+
+    rsp_buff = malloc(SH_CMD_MAX);
+    if (rsp_buff ==  NULL){
+        return client_cleanup(cli_socket, cmd_buff, rsp_buff, ERR_MEMORY);
+    }
 
     cli_socket = start_client(address,port);
     if (cli_socket < 0){
@@ -109,14 +118,64 @@ int exec_remote_cmd_loop(char *address, int port)
     while (1) 
     {
         // TODO print prompt
+        printf("%s", SH_PROMPT);
 
         // TODO fgets input
+        if (fgets(cmd_buff, ARG_MAX, stdin) == NULL){
+           printf("\n");
+           break;
+        }
+        cmd_buff[strcspn(cmd_buff,"\n")] = '\0';//remove the trailing \n from cmd_buff
 
         // TODO send() over cli_socket
+        io_size = send(cli_socket, &RDSH_EOF_CHAR, strlen(cmd_buff), 0);
+        if(io_size<0){
+            perror("Error: Send");
+            return client_cleanup(cli_socket, cmd_buff, rsp_buff, ERR_RDSH_COMMUNICATION);
+        }
 
         // TODO recv all the results
+        while ((io_size= recv(cli_socket, cmd_buff, RDSH_COMM_BUFF_SZ,0)) > 0){
+            //we got recv_size bytes
+            if (io_size < 0){
+                //we got an error, handle it and break out of loop or return
+                //from function
+                perror("Error: recv");
+                return client_cleanup(cli_socket, cmd_buff, rsp_buff, ERR_RDSH_COMMUNICATION);
+            }
+            if (io_size == 0){
+                //we received zero bytes, this often happens when we are waiting for
+                //the other side of the connection to send, but they close the socket
+                //for now lets just assume the other side went away and break out of
+                //the loop or return from the function
+                printf("Error: Closed socket.\n");
+                return client_cleanup(cli_socket, cmd_buff, rsp_buff, ERR_RDSH_COMMUNICATION);
+            }
+            //At this point we have some data, lets see if this is the last chunk
+            is_eof = ((char)cmd_buff[io_size-1] == is_eof) ? 1 : 0;
+
+            if (is_eof){
+            cmd_buff[io_size-1] = '\0'; //remove the marker and replace with a null
+                                      //this makes string processing easier
+            }
+
+            //Now the data in buff is guaranteed to be null-terminated.  Handle in,
+            //in our shell client we will just be printing it out. Note that we are
+            //using a special printf marker "%.*s" that will print out the characters
+            //until it encounters a null byte or prints out a max of recv_size
+            //characters, whatever happens first. 
+            printf("%.*s", (int)io_size, cmd_buff);
+
+            //If we are not at the last chunk, loop back and receive some more, if it
+            //is the last chunk break out of the loop
+            if (is_eof)
+                break;
+        }
 
         // TODO break on exit command
+        if (strcmp(cmd_buff,EXIT_CMD)==0){
+            break;
+        }
     }
 
     return client_cleanup(cli_socket, cmd_buff, rsp_buff, OK);
