@@ -264,12 +264,13 @@ int process_cli_requests(int svr_socket){
  *                or receive errors. 
  */
 void trim_trailing_chars(char *str) {//for trimming unknown character at the very last arg of the last command
-    if (str == NULL) return;
-
-    int len = strlen(str);
-    while (len > 0 && (isspace(str[len - 1]) || iscntrl(str[len - 1]))) {
-        str[len - 1] = '\0';
-        len--;
+    if (str == NULL){
+        return;
+    }
+    int length = strlen(str);
+    while (length > 0 && (isspace(str[length - 1]) || iscntrl(str[length - 1]))) {
+        str[length - 1] = '\0';
+        length--;
     }
 }
 
@@ -325,16 +326,16 @@ int exec_client_requests(int cli_socket) {
         // send_message_string(cli_socket, cmd_list.commands[1].argv[1]);//debug
         // TODO rsh_execute_pipeline to run your cmd_list
         cmd_rc = rsh_execute_pipeline(cli_socket, &cmd_list);
-        if (cmd_rc < 0) {
-            send_message_string(cli_socket, "50");//ERR_RDSH_COMMUNICATION
-        }
+        
         //send_message_string(cli_socket, "hallo");//debug
         
-//-----------------------------------------------------------------------------
         // TODO send appropriate respones with send_message_string
         // - error constants for failures
         // - buffer contents from execute commands
         //  - etc.
+        if (cmd_rc < 0) {
+            send_message_string(cli_socket, "50");//ERR_RDSH_COMMUNICATION
+        }
 
         // TODO send_message_eof when done
         send_message_eof(cli_socket);

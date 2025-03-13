@@ -109,14 +109,12 @@ int exec_remote_cmd_loop(char *address, int port)
 
     cli_socket = start_client(address,port);
     if (cli_socket < 0){
-        //-----------------------------perror here will add to the sent?
         return client_cleanup(cli_socket, cmd_buff, rsp_buff, ERR_RDSH_CLIENT);
     }
 
     while (1) 
     {
         // TODO print prompt
-        //-------------------------------anything printed will be sent??
         //printf("%s", SH_PROMPT);
 
         // TODO fgets input
