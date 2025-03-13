@@ -1,4 +1,3 @@
-
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <stdio.h>
@@ -94,31 +93,31 @@ int exec_remote_cmd_loop(char *address, int port)
 {
     char *cmd_buff;
     char *rsp_buff;
-    int cli_socket;
+    int cli_socket=0;
     ssize_t io_size;
     int is_eof;
 
     // TODO set up cmd and response buffs
     cmd_buff = malloc(SH_CMD_MAX);
-    if (cmd_buff ==  NULL){
-        return client_cleanup(cli_socket, cmd_buff, rsp_buff, ERR_MEMORY);
-    }
-
     rsp_buff = malloc(SH_CMD_MAX);
     if (rsp_buff ==  NULL){
+        return client_cleanup(cli_socket, cmd_buff, rsp_buff, ERR_MEMORY);
+    }
+    if (cmd_buff ==  NULL){
         return client_cleanup(cli_socket, cmd_buff, rsp_buff, ERR_MEMORY);
     }
 
     cli_socket = start_client(address,port);
     if (cli_socket < 0){
-        perror("start client");
+        //-----------------------------perror here will add to the sent?
         return client_cleanup(cli_socket, cmd_buff, rsp_buff, ERR_RDSH_CLIENT);
     }
 
     while (1) 
     {
         // TODO print prompt
-        printf("%s", SH_PROMPT);
+        //-------------------------------anything printed will be sent??
+        //printf("%s", SH_PROMPT);
 
         // TODO fgets input
         if (fgets(cmd_buff, ARG_MAX, stdin) == NULL){
@@ -126,21 +125,28 @@ int exec_remote_cmd_loop(char *address, int port)
            break;
         }
         cmd_buff[strcspn(cmd_buff,"\n")] = '\0';//remove the trailing \n from cmd_buff
+        cmd_buff[strlen(cmd_buff)] = RDSH_EOF_CHAR;//add eof
+        cmd_buff[strlen(cmd_buff)+1] ='\0';//null terminate
 
         // TODO send() over cli_socket
-        io_size = send(cli_socket, &RDSH_EOF_CHAR, strlen(cmd_buff), 0);
+        //printf("Sending command to server: '%s'\n", cmd_buff);//debugging only works for one command run
+        
+        io_size = send(cli_socket, cmd_buff, strlen(cmd_buff), 0);
+        
+        //printf("Command sent\n");//debugging only works for one command run
+        
         if(io_size<0){
-            perror("Error: Send");
+            perror("send");
             return client_cleanup(cli_socket, cmd_buff, rsp_buff, ERR_RDSH_COMMUNICATION);
         }
 
         // TODO recv all the results
-        while ((io_size= recv(cli_socket, cmd_buff, RDSH_COMM_BUFF_SZ,0)) > 0){
+        while ((io_size= recv(cli_socket, rsp_buff, RDSH_COMM_BUFF_SZ,0)) > 0){
             //we got recv_size bytes
             if (io_size < 0){
                 //we got an error, handle it and break out of loop or return
                 //from function
-                perror("Error: recv");
+                perror("recv");
                 return client_cleanup(cli_socket, cmd_buff, rsp_buff, ERR_RDSH_COMMUNICATION);
             }
             if (io_size == 0){
@@ -148,11 +154,11 @@ int exec_remote_cmd_loop(char *address, int port)
                 //the other side of the connection to send, but they close the socket
                 //for now lets just assume the other side went away and break out of
                 //the loop or return from the function
-                printf("Error: Closed socket.\n");
+                printf("closed socket.\n");
                 return client_cleanup(cli_socket, cmd_buff, rsp_buff, ERR_RDSH_COMMUNICATION);
             }
             //At this point we have some data, lets see if this is the last chunk
-            is_eof = ((char)cmd_buff[io_size-1] == is_eof) ? 1 : 0;
+            is_eof = ((char)rsp_buff[io_size-1] == RDSH_EOF_CHAR) ? 1 : 0;
 
             if (is_eof){
             cmd_buff[io_size-1] = '\0'; //remove the marker and replace with a null
@@ -164,7 +170,7 @@ int exec_remote_cmd_loop(char *address, int port)
             //using a special printf marker "%.*s" that will print out the characters
             //until it encounters a null byte or prints out a max of recv_size
             //characters, whatever happens first. 
-            printf("%.*s", (int)io_size, cmd_buff);
+            printf("%.*s", (int)io_size, rsp_buff);
 
             //If we are not at the last chunk, loop back and receive some more, if it
             //is the last chunk break out of the loop
@@ -210,9 +216,31 @@ int start_client(char *server_ip, int port){
     int ret;
 
     // TODO set up cli_socket
+    cli_socket = socket(AF_INET, SOCK_STREAM, 0);
+    if (cli_socket == -1) {//check for errors and return
+        perror("socket creation failed");
+        return ERR_RDSH_CLIENT;
+    }
 
+    memset(&addr, 0, sizeof(addr));//0 out
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
 
-    return cli_socket;
+    ret = inet_pton(AF_INET, server_ip, &addr.sin_addr);//Convert to binary
+    if (ret <= 0) {//check address
+        perror("Invalid address or address not supported");
+        close(cli_socket);
+        return ERR_RDSH_CLIENT;//return for invalid address
+    }
+
+    ret = connect(cli_socket, (struct sockaddr *)&addr, sizeof(addr));
+    if (ret < 0) {//check for connection errors
+        perror("Connection failed");
+        close(cli_socket);
+        return ERR_RDSH_CLIENT;//return for connection error
+    }
+
+    return cli_socket;//no errors
 }
 
 /*
