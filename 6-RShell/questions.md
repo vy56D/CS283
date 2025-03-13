@@ -4,11 +4,11 @@ The remote client determines when a command's output is fully received from the 
 
 2. This week's lecture on TCP explains that it is a reliable stream protocol rather than a message-oriented one. Since TCP does not preserve message boundaries, how should a networked shell protocol define and detect the beginning and end of a command sent over a TCP connection? What challenges arise if this is not handled correctly?
 
-A networked shell protocol can define and detect the beginning and end of a command sent over a TCP connection by using the length of the protocol. Termination signals and delimitors can also be used.
+A networked shell protocol can define and detect the beginning and end of a command sent over a TCP connection by using the length of the protocol. Termination signals and delimitors can also be used. If not handled correctly, the command may not be sent completely. Part of the command may be missing.
 
 3. Describe the general differences between stateful and stateless protocols.
 
-Stateful protocols keep track of the clients state while stateless protocols do not store any kind of nfomation. Stateful protocols allow for more detailed interaction than stateless protocols.
+Stateful protocols keep track of the clients state while stateless protocols do not store any kind of information. Stateful protocols allow for more detailed interaction than stateless protocols.
 
 4. Our lecture this week stated that UDP is "unreliable". If that is the case, why would we ever use it?
 
